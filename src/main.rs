@@ -14,6 +14,10 @@ use rkt::http;
 use rkt::response::status;
 use rkt::response::Responder;
 use rocket as rkt;
+use rocket::response::NamedFile;
+use rocket_contrib::Json;
+use std::io;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use todo_list::TodoList;
 use todo_list_store::*;
@@ -37,6 +41,18 @@ impl<'r, T: Responder<'r>> Responder<'r> for Failable<T> {
 
 struct ServerState {
     todo_list_store: Mutex<InMemoryStore>,
+}
+
+//Todo: when the next version of rocket comes out it will probably have better support for serving
+//static files, use the method mentioned here: https://github.com/SergioBenitez/Rocket/issues/239
+#[get("/")]
+fn index() -> Option<NamedFile> {
+    NamedFile::open("todo-tree-ui/dist/todo-tree-ui/index.html").ok()
+}
+
+#[get("/<file..>", rank = 10)] // use rank here to allow other api endpoint available as well
+fn files(file: PathBuf) -> Option<NamedFile> {
+    NamedFile::open(Path::new("todo-tree-ui/dist/todo-tree-ui/").join(file)).ok()
 }
 
 #[delete("/lists/<id>", format = "application/json")]
@@ -63,27 +79,34 @@ fn get_list(state: rkt::State<ServerState>, id: u64) -> Option<String> {
     list_store.getone(todo_list_id).map(|t| t.title).ok()
 }
 
-#[post("/lists", format = "text/plain", data = "<title>")]
-fn create_list(state: rkt::State<ServerState>, title: String) -> String {
+#[post("/lists", format = "application/json", data = "<title>")]
+fn create_list(state: rkt::State<ServerState>, title: String) -> Json<String> {
     let todo_list = TodoList {
         title: title.to_string(),
         entries: Default::default(),
     };
     let mut list_store = state.todo_list_store.lock().unwrap();
     match list_store.create(&todo_list) {
-        Ok(x) => format!("Created Todo List with id {}.", x.0),
-        Err(_) => "Failed!".to_string(),
+        Ok(x) => Json(format!("Created Todo List with id {}.", x.0)),
+        Err(_) => Json("Failed!".to_string()),
     }
 }
 
-//Create rocket instance
+///Create rocket instance
 fn rocket() -> rocket::Rocket {
     rkt::ignite()
         .manage(ServerState {
             todo_list_store: Mutex::new(InMemoryStore::new()),
         }).mount(
             "/",
-            routes![create_list, get_list, update_list, delete_list],
+            routes![
+                create_list,
+                get_list,
+                update_list,
+                delete_list,
+                files,
+                index
+            ],
         )
 }
 
@@ -105,7 +128,7 @@ mod tests {
         let response = client
             .post("/lists")
             .body("title=abc")
-            .header(ContentType::Plain)
+            .header(ContentType::JSON)
             .dispatch();
 
         assert_eq!(response.status(), Status::Ok);
