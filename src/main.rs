@@ -92,7 +92,7 @@ fn get_list(state: rkt::State<ServerState>, id: u64) -> Option<String> {
 
 /// HTTP handler for creating lists. Currently, it just sets the
 /// title. Returns the ID as a string.
-#[post("/lists", format = "text/plain", data = "<title>")]
+#[post("/lists", format = "application/json", data = "<title>")]
 fn create_list(state: rkt::State<ServerState>, title: String) -> Json<String> {
     let todo_list = TodoList {
         title: title.to_string(),
@@ -155,7 +155,7 @@ mod tests {
         client
             .post("/lists")
             .body("title=abc")
-            .header(ContentType::Plain)
+            .header(ContentType::JSON)
             .dispatch();
         let response1 = client
             .get(format!("/lists/{}", 0))
@@ -177,7 +177,7 @@ mod tests {
         client
             .post("/lists")
             .body("title=abc")
-            .header(ContentType::Plain)
+            .header(ContentType::JSON)
             .dispatch();
         let response1 = client
             .put(format!("/lists/{}", 0))
@@ -201,7 +201,7 @@ mod tests {
         client
             .post("/lists")
             .body("title=abc")
-            .header(ContentType::Plain)
+            .header(ContentType::JSON)
             .dispatch();
         client
             .delete(format!("/lists/{}", 0))
@@ -210,7 +210,7 @@ mod tests {
             .dispatch();
         let response = client
             .get(format!("/lists/{}", 0))
-            .header(ContentType::Plain)
+            .header(ContentType::JSON)
             .dispatch();
 
         assert_eq!(response.status(), Status::NotFound);
