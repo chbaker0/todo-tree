@@ -2,6 +2,7 @@ use todo_list::*;
 
 use std::collections::HashMap;
 
+/// An ID used to reference a `TodoList` in a `TodoListStore`.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct TodoListId(pub u64);
 
@@ -11,6 +12,8 @@ pub enum TodoListStoreError {
     Other,
 }
 
+/// Represents an abstract datastore for `TodoList`s. Implementations
+/// of this will be used for long-term storage of lists.
 pub trait TodoListStore {
     fn create(&mut self, todo_list: &TodoList) -> Result<TodoListId, TodoListStoreError>;
     fn getone(&self, id: TodoListId) -> Result<TodoList, TodoListStoreError>;
@@ -18,6 +21,7 @@ pub trait TodoListStore {
     fn delete(&mut self, id: TodoListId) -> Result<(), TodoListStoreError>;
 }
 
+/// A simple in-memory `TodoListStore` implemented using a `HashMap`.
 pub struct InMemoryStore {
     cur_id: TodoListId,
     list_map: HashMap<TodoListId, TodoList>,
