@@ -3,7 +3,7 @@ use todo_list::*;
 use std::collections::HashMap;
 
 /// An ID used to reference a `TodoList` in a `TodoListStore`.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
 pub struct TodoListId(pub u64);
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]

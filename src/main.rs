@@ -89,10 +89,10 @@ fn get_list(state: rkt::State<ServerState>, id: u64) -> Option<Json<TodoList>> {
 
 /// HTTP handler for creating lists. Returns the ID as a string.
 #[post("/lists", format = "application/json", data = "<list>")]
-fn create_list(state: rkt::State<ServerState>, list: Json<TodoList>) -> Failable<Json<String>> {
+fn create_list(state: rkt::State<ServerState>, list: Json<TodoList>) -> Failable<Json<TodoListId>> {
     let mut list_store = state.todo_list_store.lock().unwrap();
     match list_store.create(&list) {
-        Ok(x) => Failable::Succ(Json(format!("Created Todo List with id {}.", x.0))),
+        Ok(x) => Failable::Succ(Json(x)),
         Err(_) => Failable::Fail("List store error occurred.".to_string()),
     }
 }
@@ -145,22 +145,28 @@ mod tests {
     fn test_get() {
         let client = Client::new(rocket()).expect("valid rocket instance");
 
-        client
-            .post("/lists")
-            .body(get_test_json("Test".to_string()))
-            .header(ContentType::JSON)
-            .dispatch();
+        // Try getting a non-existent list.
         let response1 = client
             .get(format!("/lists/{}", 0))
             .header(ContentType::JSON)
             .dispatch();
-        let response2 = client
-            .get(format!("/lists/{}", 9))
+        assert_eq!(response1.status(), Status::NotFound);
+
+        // Insert a dummy list.
+        let mut response2 = client
+            .post("/lists")
+            .body(get_test_json("Test".to_string()))
+            .header(ContentType::JSON)
+            .dispatch();
+        assert_eq!(response2.status(), Status::Ok);
+
+        // Try getting the inserted list.
+        let response3 = client
+            .get(format!("/lists/{}", response2.body_string().unwrap()))
             .header(ContentType::JSON)
             .dispatch();
 
-        assert_eq!(response1.status(), Status::Ok);
-        assert_eq!(response2.status(), Status::NotFound);
+        assert_eq!(response3.status(), Status::Ok);
     }
 
     #[test]
