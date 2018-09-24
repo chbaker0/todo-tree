@@ -4,8 +4,10 @@
 extern crate rocket;
 #[macro_use]
 extern crate rocket_contrib;
+extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde_json;
 
 mod todo_list;
 mod todo_list_store;
@@ -69,37 +71,27 @@ fn delete_list(state: rkt::State<ServerState>, id: u64) -> Option<()> {
     list_store.delete(TodoListId(id)).ok()
 }
 
-/// HTTP handler for modifying lists. Currently, it just sets the title.
-#[put("/lists/<id>", format = "application/json", data = "<title>")]
-fn update_list(state: rkt::State<ServerState>, id: u64, title: String) -> Option<()> {
+/// HTTP handler for modifying lists.
+#[put("/lists/<id>", format = "application/json", data = "<list>")]
+fn update_list(state: rkt::State<ServerState>, id: u64, list: Json<TodoList>) -> Option<()> {
     let todo_list_id = TodoListId(id);
     let mut list_store = state.todo_list_store.lock().unwrap();
-    let todo_list = TodoList {
-        title: title.to_string(),
-        entries: Default::default(),
-    };
-    list_store.update(todo_list_id, &todo_list).ok()
+    list_store.update(todo_list_id, &list.into_inner()).ok()
 }
 
-/// HTTP handler for retrieving lists. Since we are only setting the
-/// title, this only returns the title.
+/// HTTP handler for retrieving lists.
 #[get("/lists/<id>", format = "application/json")]
-fn get_list(state: rkt::State<ServerState>, id: u64) -> Option<String> {
+fn get_list(state: rkt::State<ServerState>, id: u64) -> Option<Json<TodoList>> {
     let todo_list_id = TodoListId(id);
     let list_store = state.todo_list_store.lock().unwrap();
-    list_store.getone(todo_list_id).map(|t| t.title).ok()
+    list_store.getone(todo_list_id).map(|t| Json(t)).ok()
 }
 
-/// HTTP handler for creating lists. Currently, it just sets the
-/// title. Returns the ID as a string.
-#[post("/lists", format = "application/json", data = "<title>")]
-fn create_list(state: rkt::State<ServerState>, title: String) -> Json<String> {
-    let todo_list = TodoList {
-        title: title.to_string(),
-        entries: Default::default(),
-    };
+/// HTTP handler for creating lists. Returns the ID as a string.
+#[post("/lists", format = "application/json", data = "<list>")]
+fn create_list(state: rkt::State<ServerState>, list: Json<TodoList>) -> Json<String> {
     let mut list_store = state.todo_list_store.lock().unwrap();
-    match list_store.create(&todo_list) {
+    match list_store.create(&list) {
         Ok(x) => Json(format!("Created Todo List with id {}.", x.0)),
         Err(_) => Json("Failed!".to_string()),
     }
@@ -133,6 +125,8 @@ mod tests {
     use rocket::http::ContentType;
     use rocket::http::Status;
     use rocket::local::Client;
+    use serde_json;
+    use todo_list::TodoList;
 
     #[test]
     fn test_create() {
@@ -140,7 +134,7 @@ mod tests {
 
         let response = client
             .post("/lists")
-            .body("title=abc")
+            .body(get_test_json("Test".to_string()))
             .header(ContentType::JSON)
             .dispatch();
 
@@ -151,10 +145,9 @@ mod tests {
     fn test_get() {
         let client = Client::new(rocket()).expect("valid rocket instance");
 
-        //add a list
         client
             .post("/lists")
-            .body("title=abc")
+            .body(get_test_json("Test".to_string()))
             .header(ContentType::JSON)
             .dispatch();
         let response1 = client
@@ -176,17 +169,17 @@ mod tests {
 
         client
             .post("/lists")
-            .body("title=abc")
+            .body(get_test_json("abc".to_string()))
             .header(ContentType::JSON)
             .dispatch();
         let response1 = client
             .put(format!("/lists/{}", 0))
-            .body("title=xyz")
+            .body(get_test_json("xyz".to_string()))
             .header(ContentType::JSON)
             .dispatch();
         let response2 = client
             .put(format!("/lists/{}", 9))
-            .body("title=xyz")
+            .body(get_test_json("xyz".to_string()))
             .header(ContentType::JSON)
             .dispatch();
 
@@ -200,12 +193,11 @@ mod tests {
 
         client
             .post("/lists")
-            .body("title=abc")
+            .body(get_test_json("abc".to_string()))
             .header(ContentType::JSON)
             .dispatch();
         client
             .delete(format!("/lists/{}", 0))
-            .body("title=xyz")
             .header(ContentType::JSON)
             .dispatch();
         let response = client
@@ -214,5 +206,14 @@ mod tests {
             .dispatch();
 
         assert_eq!(response.status(), Status::NotFound);
+    }
+
+    fn get_test_json(list_title: String) -> String {
+        let list = TodoList {
+            title: list_title,
+            entries: Default::default(),
+        };
+
+        serde_json::to_string(&list).unwrap()
     }
 }
