@@ -89,11 +89,11 @@ fn get_list(state: rkt::State<ServerState>, id: u64) -> Option<Json<TodoList>> {
 
 /// HTTP handler for creating lists. Returns the ID as a string.
 #[post("/lists", format = "application/json", data = "<list>")]
-fn create_list(state: rkt::State<ServerState>, list: Json<TodoList>) -> Json<String> {
+fn create_list(state: rkt::State<ServerState>, list: Json<TodoList>) -> Failable<Json<String>> {
     let mut list_store = state.todo_list_store.lock().unwrap();
     match list_store.create(&list) {
-        Ok(x) => Json(format!("Created Todo List with id {}.", x.0)),
-        Err(_) => Json("Failed!".to_string()),
+        Ok(x) => Failable::Succ(Json(format!("Created Todo List with id {}.", x.0))),
+        Err(_) => Failable::Fail("List store error occurred.".to_string()),
     }
 }
 
