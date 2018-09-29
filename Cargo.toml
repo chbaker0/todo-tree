@@ -2,11 +2,19 @@
 name = "todo-tree"
 version = "0.0.1"
 authors = ["Gus Smith <gushenrysmith@gmail.com>", "Anthony Marucci <amarucci13@gmail.com>", "Collin Baker <chbaker0@gmail.com>"]
+build = "build.rs"
 
 [dependencies]
+grpc = "~0.5"
+protobuf = "~2"
+futures = "~0.1"
+futures-cpupool = "~0.1"
 rocket = "0.3.16"
 rocket_codegen = "0.3.16"
 rocket_contrib = "0.3.16"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
+
+[build-dependencies]
+protoc-rust-grpc = "~0.5"
