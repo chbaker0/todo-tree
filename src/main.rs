@@ -1,6 +1,10 @@
 #![feature(plugin)]
 #![plugin(rocket_codegen)]
 
+extern crate futures;
+extern crate futures_cpupool;
+extern crate grpc;
+extern crate protobuf;
 extern crate rocket;
 #[macro_use]
 extern crate rocket_contrib;
