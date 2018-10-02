@@ -12,6 +12,20 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+extern crate tls_api;
+extern crate tls_api_openssl;
+
+/// Generated code
+mod gen {
+    /// Generated proto modules
+    mod proto {
+        mod datastore;
+        mod datastore_grpc;
+        mod entity;
+        mod latlng;
+        mod query;
+    }
+}
 
 mod todo_list;
 mod todo_list_store;

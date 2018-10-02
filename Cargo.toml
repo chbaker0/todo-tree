@@ -9,12 +9,15 @@ grpc = "~0.5"
 protobuf = "~2"
 futures = "~0.1"
 futures-cpupool = "~0.1"
+openssl = { version = "0.10", features = ["vendored"] }
 rocket = "0.3.16"
 rocket_codegen = "0.3.16"
 rocket_contrib = "0.3.16"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
+tls-api = "0.1.20"
+tls-api-openssl = "0.1.20"
 
 [build-dependencies]
 protoc-rust-grpc = "~0.5"
