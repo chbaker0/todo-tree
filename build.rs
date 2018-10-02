@@ -16,7 +16,6 @@ fn main() {
         input: &["proto/googleapis/google/datastore/v1beta3/datastore.proto",
                  "proto/googleapis/google/datastore/v1beta3/entity.proto",
                  "proto/googleapis/google/datastore/v1beta3/query.proto",
-                 "proto/googleapis/google/protobuf/struct.proto",
                  "proto/googleapis/google/type/latlng.proto"],
         rust_protobuf: true,
         ..Default::default()
